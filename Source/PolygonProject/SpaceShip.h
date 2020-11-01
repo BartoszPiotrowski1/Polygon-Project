@@ -49,16 +49,5 @@ public:
 	void MouseYInput(float Val);
 
 
-	float Velocity;
-	FVector Direction;
-
-	/** Current yaw speed */
-	float CurrentYawSpeed;
-
-	/** Current pitch speed */
-	float CurrentPitchSpeed;
-
-	/** Current roll speed */
-	float CurrentRollSpeed;
-
+	FRotator CurrentRotationSpeed;
 };

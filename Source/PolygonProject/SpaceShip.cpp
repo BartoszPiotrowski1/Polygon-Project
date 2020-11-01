@@ -2,13 +2,11 @@
 
 
 #include "SpaceShip.h"
-#include "UObject/ConstructorHelpers.h"
+#include "CommonIncludes.h"
+
 #include "Camera/CameraComponent.h"
-#include "Components/StaticMeshComponent.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "Engine/World.h"
-#include "Engine/StaticMesh.h"
 #include "GameFramework/FloatingPawnMovement.h"
 
 // Sets default values
@@ -65,21 +63,23 @@ void ASpaceShip::MoveUpInput(float Val)
 
 void ASpaceShip::MouseXInput(float Val)
 {
+	FRotator targetRotationSpeed;
+	
 	// Target yaw speed is based on input
 	float TargetYawSpeed = (Val * TurnSpeed);
 
 	// Smoothly interpolate to target yaw speed
-	CurrentYawSpeed = FMath::FInterpTo(CurrentYawSpeed, TargetYawSpeed, GetWorld()->GetDeltaSeconds(), 2.f);
+	CurrentRotationSpeed.Yaw = FMath::FInterpTo(CurrentRotationSpeed.Yaw, TargetYawSpeed, GetWorld()->GetDeltaSeconds(), 2.f);
 
 	// Is there any left/right input?
 	const bool bIsTurning = FMath::Abs(Val) > 0.2f;
 
 	// If turning, yaw value is used to influence roll
 	// If not turning, roll to reverse current roll value.
-	float TargetRollSpeed = bIsTurning ? (CurrentYawSpeed * 0.5f) : (GetActorRotation().Roll * -2.f);
+	float TargetRollSpeed = bIsTurning ? (CurrentRotationSpeed.Yaw * 0.5f) : (GetActorRotation().Roll * -2.f);
 
 	// Smoothly interpolate roll speed
-	CurrentRollSpeed = FMath::FInterpTo(CurrentRollSpeed, TargetRollSpeed, GetWorld()->GetDeltaSeconds(), TurnInterpSpeed);
+	CurrentRotationSpeed.Roll = FMath::FInterpTo(CurrentRotationSpeed.Roll, TargetRollSpeed, GetWorld()->GetDeltaSeconds(), TurnInterpSpeed);
 }
 
 void ASpaceShip::MouseYInput(float Val)
@@ -89,21 +89,19 @@ void ASpaceShip::MouseYInput(float Val)
 	float TargetPitchSpeed = (Val * TurnSpeed );
 
 	// When steering, we decrease pitch slightly
-	TargetPitchSpeed += (FMath::Abs(CurrentYawSpeed) * 0.2f);
+	TargetPitchSpeed += (FMath::Abs(CurrentRotationSpeed.Yaw) * 0.2f);
 
 	// Smoothly interpolate to target pitch speed
-	CurrentPitchSpeed = FMath::FInterpTo(CurrentPitchSpeed, TargetPitchSpeed, GetWorld()->GetDeltaSeconds(), TurnInterpSpeed);
+	CurrentRotationSpeed.Pitch = FMath::FInterpTo(CurrentRotationSpeed.Pitch, TargetPitchSpeed, GetWorld()->GetDeltaSeconds(), TurnInterpSpeed);
 }
 
 // Called every frame
 void ASpaceShip::Tick(float DeltaTime)
 {
+	Movement->AddInputVector(FVector::DownVector*0.25f);
 
 	// Calculate change in rotation this frame
-	FRotator DeltaRotation(0,0,0);
-	DeltaRotation.Pitch = CurrentPitchSpeed * DeltaTime;
-	DeltaRotation.Yaw = CurrentYawSpeed * DeltaTime;
-	DeltaRotation.Roll = CurrentRollSpeed * DeltaTime;
+	FRotator DeltaRotation = CurrentRotationSpeed * DeltaTime;
 
 	// Rotate plane
 	AddActorLocalRotation(DeltaRotation);
